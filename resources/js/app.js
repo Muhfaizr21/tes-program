@@ -1,1 +1,1 @@
-//
+import './schedule-manager';
