@@ -1,34 +1,26 @@
 /**
- * Sewing Line Production Scheduler & Dynamic Auto-Balancing Engine
- * Pure Modern JavaScript with full UI Lifecycle states (Before, During, After Process)
+ * Manufacturing Execution System (MES) - Sewing Line Production Scheduler
+ * High-Precision Gantt Matrix & Cascade Dynamic Balancing Engine
  */
 
-class ScheduleApp {
+class ProductionScheduler {
     constructor() {
-        // Initial Demo State
+        this.timelineStart = new Date('2026-03-01T00:00:00');
+        this.timelineDays = 14; // 14 Days window (1 Mar - 14 Mar 2026)
+
         this.lines = [
-            { id: 1, code: 'LINE-01', name: 'Sewing Line 01 (Kemeja & Polo)', capacity: 400 },
-            { id: 2, code: 'LINE-02', name: 'Sewing Line 02 (Outerwear & Jacket)', capacity: 300 },
-            { id: 3, code: 'LINE-03', name: 'Sewing Line 03 (Pants & Chino)', capacity: 500 },
+            { id: 1, code: 'LINE-01', name: 'Line 01 - Shirt & Polo', capacity: 400, operators: 38 },
+            { id: 2, code: 'LINE-02', name: 'Line 02 - Outerwear & Jacket', capacity: 300, operators: 42 },
+            { id: 3, code: 'LINE-03', name: 'Line 03 - Trousers & Chino', capacity: 500, operators: 35 },
         ];
 
-        this.orders = [
-            { id: 1, order_no: 'PO-2026-001', buyer: 'Uniqlo Japan', style: 'Dry-EX Polo Shirt', qty: 1000 },
-            { id: 2, order_no: 'PO-2026-002', buyer: 'H&M Global', style: 'Casual Cotton Flannel', qty: 850 },
-            { id: 3, order_no: 'PO-2026-003', buyer: 'Zara Men', style: 'Slim Fit Chino Trousers', qty: 1200 },
-            { id: 4, order_no: 'PO-2026-004', buyer: 'Marks & Spencer', style: 'Classic Oxford Shirt', qty: 900 },
-        ];
-
-        // Active Schedules
-        this.schedules = [
+        this.initialSchedules = [
             {
-                id: 1,
-                order_id: 1,
-                line_id: 1,
+                id: 101,
+                line_code: 'LINE-01',
                 order_no: 'PO-2026-001',
                 buyer: 'Uniqlo Japan',
-                style: 'Dry-EX Polo Shirt',
-                line_code: 'LINE-01',
+                style: 'Dry-EX Pique Polo',
                 start_date: '2026-03-01',
                 finish_date: '2026-03-03', // 3 Hari: 1, 2, 3 Maret
                 total_target_qty: 1000,
@@ -38,73 +30,96 @@ class ScheduleApp {
                 daily_outputs: [
                     { day_index: 1, date: '2026-03-01', target_qty: 333, actual_qty: 300, deficit: 33, is_closed: true },
                     { day_index: 2, date: '2026-03-02', target_qty: 333, actual_qty: null, deficit: 0, is_closed: false },
-                    { day_index: 3, date: '2026-03-03', target_qty: 334, actual_qty: null, deficit: 0, is_closed: false }, // 333 + 1 sisa
+                    { day_index: 3, date: '2026-03-03', target_qty: 334, actual_qty: null, deficit: 0, is_closed: false }, // Sisa +1
                 ]
             },
             {
-                id: 2,
-                order_id: 2,
-                line_id: 1,
-                order_no: 'PO-2026-002',
-                buyer: 'H&M Global',
-                style: 'Casual Cotton Flannel',
+                id: 102,
                 line_code: 'LINE-01',
+                order_no: 'PO-2026-002',
+                buyer: 'H&M Sweden',
+                style: 'Casual Oxford Button-Down',
                 start_date: '2026-03-04',
-                finish_date: '2026-03-06', // 3 Hari: 4, 5, 6 Maret
-                total_target_qty: 850,
+                finish_date: '2026-03-07', // 4 Hari: 4, 5, 6, 7 Maret
+                total_target_qty: 1100,
                 total_actual_qty: 0,
                 status: 'scheduled',
                 shifted_days: 0,
                 daily_outputs: [
-                    { day_index: 1, date: '2026-03-04', target_qty: 283, actual_qty: null, deficit: 0, is_closed: false },
-                    { day_index: 2, date: '2026-03-05', target_qty: 283, actual_qty: null, deficit: 0, is_closed: false },
-                    { day_index: 3, date: '2026-03-06', target_qty: 284, actual_qty: null, deficit: 0, is_closed: false }, // 283 + 1 sisa
+                    { day_index: 1, date: '2026-03-04', target_qty: 275, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 2, date: '2026-03-05', target_qty: 275, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 3, date: '2026-03-06', target_qty: 275, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 4, date: '2026-03-07', target_qty: 275, actual_qty: null, deficit: 0, is_closed: false },
                 ]
             },
             {
-                id: 3,
-                order_id: 3,
-                line_id: 3,
+                id: 103,
+                line_code: 'LINE-02',
                 order_no: 'PO-2026-003',
-                buyer: 'Zara Men',
-                style: 'Slim Fit Chino Trousers',
-                line_code: 'LINE-03',
-                start_date: '2026-03-01',
-                finish_date: '2026-03-04', // 4 Hari: 1, 2, 3, 4 Maret
-                total_target_qty: 1200,
-                total_actual_qty: 600,
+                buyer: 'Zara Man',
+                style: 'Technical Windbreaker',
+                start_date: '2026-03-02',
+                finish_date: '2026-03-05', // 4 Hari: 2, 3, 4, 5 Maret
+                total_target_qty: 900,
+                total_actual_qty: 450,
                 status: 'running',
                 shifted_days: 0,
                 daily_outputs: [
-                    { day_index: 1, date: '2026-03-01', target_qty: 300, actual_qty: 300, deficit: 0, is_closed: true },
-                    { day_index: 2, date: '2026-03-02', target_qty: 300, actual_qty: 300, deficit: 0, is_closed: true },
-                    { day_index: 3, date: '2026-03-03', target_qty: 300, actual_qty: null, deficit: 0, is_closed: false },
-                    { day_index: 4, date: '2026-03-04', target_qty: 300, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 1, date: '2026-03-02', target_qty: 225, actual_qty: 225, deficit: 0, is_closed: true },
+                    { day_index: 2, date: '2026-03-03', target_qty: 225, actual_qty: 225, deficit: 0, is_closed: true },
+                    { day_index: 3, date: '2026-03-04', target_qty: 225, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 4, date: '2026-03-05', target_qty: 225, actual_qty: null, deficit: 0, is_closed: false },
+                ]
+            },
+            {
+                id: 104,
+                line_code: 'LINE-03',
+                order_no: 'PO-2026-004',
+                buyer: 'Uniqlo Japan',
+                style: 'Smart Ankle Chino Pants',
+                start_date: '2026-03-01',
+                finish_date: '2026-03-05', // 5 Hari: 1, 2, 3, 4, 5 Maret
+                total_target_qty: 1600,
+                total_actual_qty: 640,
+                status: 'running',
+                shifted_days: 0,
+                daily_outputs: [
+                    { day_index: 1, date: '2026-03-01', target_qty: 320, actual_qty: 320, deficit: 0, is_closed: true },
+                    { day_index: 2, date: '2026-03-02', target_qty: 320, actual_qty: 320, deficit: 0, is_closed: true },
+                    { day_index: 3, date: '2026-03-03', target_qty: 320, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 4, date: '2026-03-04', target_qty: 320, actual_qty: null, deficit: 0, is_closed: false },
+                    { day_index: 5, date: '2026-03-05', target_qty: 320, actual_qty: null, deficit: 0, is_closed: false },
                 ]
             }
         ];
 
+        this.schedules = JSON.parse(JSON.stringify(this.initialSchedules));
         this.selectedLine = 'all';
-        this.activeView = 'timeline'; // 'timeline' or 'table'
-        this.activeScheduleDetail = null;
+        this.activeView = 'gantt'; // 'gantt' or 'table'
+        this.activeSchedule = null;
 
         this.init();
     }
 
     init() {
-        this.renderStats();
-        this.renderScheduleTimeline();
-        this.renderScheduleTable();
-        this.setupEventListeners();
+        this.renderTelemetry();
+        this.renderGanttMatrix();
+        this.renderTabularData();
+        this.bindEvents();
+    }
+
+    resetData() {
+        this.schedules = JSON.parse(JSON.stringify(this.initialSchedules));
+        this.renderTelemetry();
+        this.renderGanttMatrix();
+        this.renderTabularData();
+        this.showToast('Data simulasi berhasil di-reset ke status awal.', 'info');
     }
 
     /* -------------------------------------------------------------
      * CORE CALCULATION ENGINE (Ketentuan Poin 2 & 3 Readme)
      * ------------------------------------------------------------- */
 
-    /**
-     * Hitung pembagian target harian dengan sisa bagi di hari terakhir
-     */
     calculateDailyDistribution(startDateStr, finishDateStr, totalQty) {
         const start = new Date(startDateStr);
         const finish = new Date(finishDateStr);
@@ -142,203 +157,188 @@ class ScheduleApp {
         return { totalDays, baseTarget, remainder, dailyList };
     }
 
-    /**
-     * Format tanggal Indonesia
-     */
-    formatDate(dateStr) {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    dateToTimelineCol(dateStr) {
+        const target = new Date(dateStr + 'T00:00:00');
+        const diffDays = Math.round((target.getTime() - this.timelineStart.getTime()) / (1000 * 3600 * 24));
+        return diffDays + 1; // 1-indexed relative to timeline
     }
 
-    /**
-     * Hitung status badge
-     */
-    getStatusBadge(schedule) {
-        if (schedule.shifted_days > 0) {
-            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> Mundur +${schedule.shifted_days} Hari
-            </span>`;
-        }
-        if (schedule.status === 'completed') {
-            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <i class="fa-solid fa-check text-emerald-500"></i> Selesai
-            </span>`;
-        }
-        if (schedule.status === 'running') {
-            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span> Sedang Berjalan
-            </span>`;
-        }
-        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-            <i class="fa-regular fa-calendar text-slate-400"></i> Terjadwal
-        </span>`;
+    formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const [y, m, d] = dateStr.split('-');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        return `${parseInt(d)} ${months[parseInt(m) - 1]}`;
     }
 
     /* -------------------------------------------------------------
-     * UI RENDERING
+     * RENDERING ENGINE: TELEMETRY & GANTT MATRIX
      * ------------------------------------------------------------- */
 
-    renderStats() {
-        const totalLines = this.lines.length;
-        const totalSchedules = this.schedules.length;
-        
+    renderTelemetry() {
+        const totalOrders = this.schedules.length;
         let totalTarget = 0;
         let totalActual = 0;
-        let delayedCount = 0;
+        let shiftedCount = 0;
 
         this.schedules.forEach(s => {
             totalTarget += s.total_target_qty;
             totalActual += s.total_actual_qty;
-            if (s.shifted_days > 0) delayedCount++;
+            if (s.shifted_days > 0) shiftedCount++;
         });
 
         const percent = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : 0;
 
-        document.getElementById('stat-lines').textContent = totalLines;
-        document.getElementById('stat-orders').textContent = totalSchedules;
-        document.getElementById('stat-target').textContent = totalTarget.toLocaleString('id-ID') + ' pcs';
-        document.getElementById('stat-actual').textContent = totalActual.toLocaleString('id-ID') + ' pcs';
+        document.getElementById('stat-orders').textContent = totalOrders;
+        document.getElementById('stat-target').textContent = totalTarget.toLocaleString('id-ID');
+        document.getElementById('stat-actual').textContent = totalActual.toLocaleString('id-ID');
         document.getElementById('stat-percent').textContent = percent + '%';
-        document.getElementById('stat-progress-bar').style.width = Math.min(percent, 100) + '%';
-        
-        const delayElem = document.getElementById('stat-delayed');
-        if (delayElem) {
-            delayElem.textContent = delayedCount > 0 ? `${delayedCount} Order Bergeser` : 'Semua On-Track';
-            delayElem.className = delayedCount > 0 
-                ? 'text-xs font-medium text-amber-600 flex items-center gap-1' 
-                : 'text-xs font-medium text-emerald-600 flex items-center gap-1';
+        document.getElementById('stat-progress-bar').style.width = percent + '%';
+
+        const summaryElem = document.getElementById('stat-cascade-summary');
+        const detailElem = document.getElementById('stat-cascade-detail');
+
+        if (shiftedCount > 0) {
+            summaryElem.textContent = `${shiftedCount} Order Tergeser`;
+            summaryElem.className = 'text-sm font-bold font-mono text-amber-400';
+            detailElem.textContent = 'Auto-balancing aktif & cascade shift terpasang';
+        } else {
+            summaryElem.textContent = 'Synchronized';
+            summaryElem.className = 'text-sm font-bold font-mono text-emerald-400';
+            detailElem.textContent = 'Semua antrian line normal tanpa tubrukan';
         }
     }
 
-    renderScheduleTimeline() {
-        const container = document.getElementById('timeline-container');
-        if (!container) return;
+    renderGanttMatrix() {
+        const headerRow = document.getElementById('gantt-header-row');
+        const bodyContainer = document.getElementById('gantt-body-container');
+        if (!headerRow || !bodyContainer) return;
 
-        let filtered = this.schedules;
-        if (this.selectedLine !== 'all') {
-            filtered = filtered.filter(s => s.line_code === this.selectedLine);
-        }
+        // 1. Generate 14-day Calendar Columns in Header
+        let headerHtml = `
+            <div class="p-3 bg-slate-950 font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800 flex items-center justify-between">
+                <span>Sewing Line Asset</span>
+                <span class="text-[10px] text-slate-500">Cap/Day</span>
+            </div>
+        `;
 
-        if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                    <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-3"></i>
-                    <p class="text-slate-500 font-medium">Tidak ada jadwal pada line ini.</p>
+        let currDate = new Date(this.timelineStart);
+        const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+        for (let i = 1; i <= this.timelineDays; i++) {
+            const dateNum = currDate.getDate().toString().padStart(2, '0');
+            const dayName = dayNames[currDate.getDay()];
+            const isWeekend = currDate.getDay() === 0 || currDate.getDay() === 6;
+
+            headerHtml += `
+                <div class="py-2 px-1 text-center border-r border-slate-800/80 flex flex-col justify-center items-center ${isWeekend ? 'bg-slate-900/60 text-slate-500' : 'bg-slate-950 text-slate-300'}">
+                    <span class="text-[10px] uppercase font-semibold text-slate-500">${dayName}</span>
+                    <span class="text-xs font-bold ${isWeekend ? 'text-slate-400' : 'text-cyan-400'}">${dateNum}</span>
                 </div>
             `;
-            return;
+            currDate.setDate(currDate.getDate() + 1);
+        }
+        headerRow.innerHTML = headerHtml;
+
+        // 2. Filter lines
+        let activeLines = this.lines;
+        if (this.selectedLine !== 'all') {
+            activeLines = activeLines.filter(l => l.code === this.selectedLine);
         }
 
-        // Group by line
-        const lineGroups = {};
-        this.lines.forEach(l => {
-            if (this.selectedLine === 'all' || this.selectedLine === l.code) {
-                lineGroups[l.code] = { line: l, schedules: [] };
-            }
-        });
+        let bodyHtml = '';
 
-        filtered.forEach(s => {
-            if (lineGroups[s.line_code]) {
-                lineGroups[s.line_code].schedules.push(s);
-            }
-        });
+        activeLines.forEach(line => {
+            const lineSchedules = this.schedules.filter(s => s.line_code === line.code);
+            const lineLoad = lineSchedules.reduce((acc, curr) => acc + curr.total_target_qty, 0);
 
-        let html = '';
-        Object.values(lineGroups).forEach(group => {
-            html += `
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 mb-4 transition-all">
-                    <!-- Line Header -->
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg tracking-wider">
-                                ${group.line.code}
+            bodyHtml += `
+                <div class="gantt-row relative hover:bg-slate-900/30 transition-colors">
+                    <!-- Left: Line Telemetry Info -->
+                    <div class="p-3 bg-slate-950/80 border-r border-slate-800 flex flex-col justify-center">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-400 font-mono text-[11px] font-bold">
+                                ${line.code}
                             </span>
-                            <h3 class="font-bold text-slate-800 text-sm md:text-base">${group.line.name}</h3>
+                            <span class="text-[10px] font-mono text-slate-400">${line.capacity} pcs/d</span>
                         </div>
-                        <span class="text-xs text-slate-500 font-medium">
-                            Kapasitas: <strong class="text-slate-700">${group.line.capacity} pcs/hari</strong>
-                        </span>
+                        <h4 class="text-xs font-bold text-slate-200 mt-1 truncate">${line.name}</h4>
+                        <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                            <span>${line.operators} Operators</span>
+                            <span class="text-slate-400">${lineSchedules.length} Batches</span>
+                        </div>
                     </div>
 
-                    <!-- Line Schedule Track Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- 14 Timeline Grid Column Background Cells -->
             `;
 
-            if (group.schedules.length === 0) {
-                html += `
-                    <div class="col-span-full py-6 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        Line ini sedang idle / belum ada antrian jadwal.
+            for (let c = 1; c <= this.timelineDays; c++) {
+                bodyHtml += `<div class="border-r border-slate-800/40 min-h-[96px] bg-grid-technical pointer-events-none"></div>`;
+            }
+
+            // Render Gantt Schedule Blocks overlaid on the row
+            bodyHtml += `<div class="absolute inset-y-0 left-[240px] right-0 flex items-center px-1 pointer-events-none">`;
+
+            lineSchedules.forEach(schedule => {
+                const startCol = this.dateToTimelineCol(schedule.start_date);
+                const finishCol = this.dateToTimelineCol(schedule.finish_date);
+                const colSpan = (finishCol - startCol) + 1;
+
+                if (startCol < 1 || startCol > this.timelineDays) return;
+
+                const leftPercent = ((startCol - 1) / this.timelineDays) * 100;
+                const widthPercent = (colSpan / this.timelineDays) * 100;
+                const progress = schedule.total_target_qty > 0 ? Math.round((schedule.total_actual_qty / schedule.total_target_qty) * 100) : 0;
+                const isShifted = schedule.shifted_days > 0;
+
+                bodyHtml += `
+                    <div onclick="window.scheduleApp.openSlideOver(${schedule.id})"
+                        class="absolute pointer-events-auto cursor-pointer rounded-lg p-2.5 transition-all duration-200 group border flex flex-col justify-between shadow-lg ${
+                            isShifted 
+                                ? 'bg-amber-950/80 border-amber-500/80 hover:border-amber-400 shadow-amber-950/30' 
+                                : 'bg-slate-800/90 border-slate-700 hover:border-cyan-400 shadow-slate-950/40'
+                        }"
+                        style="left: calc(${leftPercent}% + 4px); width: calc(${widthPercent}% - 8px); height: 76px;"
+                    >
+                        <div class="flex items-start justify-between gap-1">
+                            <div class="truncate">
+                                <span class="font-mono text-[10px] font-bold text-cyan-400 block">${schedule.order_no}</span>
+                                <h5 class="text-xs font-bold text-white truncate">${schedule.style}</h5>
+                                <span class="text-[10px] text-slate-400 truncate block">${schedule.buyer}</span>
+                            </div>
+                            
+                            ${isShifted ? `
+                                <span class="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-mono text-[9px] font-black shrink-0 flex items-center gap-1 animate-pulse">
+                                    <i class="fa-solid fa-arrow-right"></i> +${schedule.shifted_days}d
+                                </span>
+                            ` : `
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 font-mono text-[9px] font-semibold text-slate-300 border border-slate-700 shrink-0">
+                                    ${progress}%
+                                </span>
+                            `}
+                        </div>
+
+                        <!-- Mini Progress Bar & Qty -->
+                        <div class="space-y-1">
+                            <div class="w-full bg-slate-950/80 rounded-full h-1 overflow-hidden">
+                                <div class="${isShifted ? 'bg-amber-400' : 'bg-cyan-400'} h-1 rounded-full" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="flex justify-between text-[9px] font-mono text-slate-400">
+                                <span>${schedule.total_actual_qty}/${schedule.total_target_qty} pcs</span>
+                                <span class="text-slate-300 font-semibold">${this.formatDate(schedule.start_date)} - ${this.formatDate(schedule.finish_date)}</span>
+                            </div>
+                        </div>
                     </div>
                 `;
-            } else {
-                group.schedules.forEach(s => {
-                    const progress = s.total_target_qty > 0 ? Math.round((s.total_actual_qty / s.total_target_qty) * 100) : 0;
-                    
-                    html += `
-                        <div class="relative bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group flex flex-col justify-between">
-                            <div>
-                                <div class="flex items-start justify-between gap-2 mb-2">
-                                    <div>
-                                        <span class="text-xs font-bold text-indigo-600 block">${s.order_no}</span>
-                                        <h4 class="font-bold text-slate-800 text-sm">${s.style}</h4>
-                                        <p class="text-xs text-slate-500">Buyer: ${s.buyer}</p>
-                                    </div>
-                                    ${this.getStatusBadge(s)}
-                                </div>
+            });
 
-                                <!-- Date Range Box -->
-                                <div class="my-3 py-2 px-3 bg-white rounded-lg border border-slate-200/80 flex items-center justify-between text-xs">
-                                    <div class="flex items-center gap-1.5 text-slate-600">
-                                        <i class="fa-regular fa-calendar-check text-indigo-500"></i>
-                                        <span>${this.formatDate(s.start_date)}</span>
-                                    </div>
-                                    <i class="fa-solid fa-arrow-right text-slate-300 text-xs"></i>
-                                    <div class="flex items-center gap-1.5 text-slate-600">
-                                        <i class="fa-regular fa-flag text-rose-500"></i>
-                                        <span class="font-semibold ${s.shifted_days > 0 ? 'text-amber-600 font-bold' : ''}">${this.formatDate(s.finish_date)}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Progress & Qty -->
-                                <div class="space-y-1.5 my-2">
-                                    <div class="flex justify-between text-xs font-semibold">
-                                        <span class="text-slate-500">Realisasi: ${s.total_actual_qty} / ${s.total_target_qty} pcs</span>
-                                        <span class="text-indigo-600 font-bold">${progress}%</span>
-                                    </div>
-                                    <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                                        <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Action Button -->
-                            <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                                <span class="text-[11px] text-slate-400">
-                                    ${s.daily_outputs.length} Hari Alokasi
-                                </span>
-                                <button type="button" onclick="window.scheduleApp.openDetailModal(${s.id})" 
-                                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-sliders text-xs"></i>
-                                    <span>Input & Balancing</span>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            html += `
-                    </div>
-                </div>
-            `;
+            bodyHtml += `</div></div>`;
         });
 
-        container.innerHTML = html;
+        bodyContainer.innerHTML = bodyHtml;
     }
 
-    renderScheduleTable() {
-        const tbody = document.getElementById('schedule-table-body');
+    renderTabularData() {
+        const tbody = document.getElementById('tabular-body');
         if (!tbody) return;
 
         let filtered = this.schedules;
@@ -346,59 +346,48 @@ class ScheduleApp {
             filtered = filtered.filter(s => s.line_code === this.selectedLine);
         }
 
-        if (filtered.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="px-6 py-8 text-center text-slate-400 text-sm">
-                        Tidak ada data schedule yang cocok.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
         let html = '';
-        filtered.forEach((s, idx) => {
+        filtered.forEach(s => {
             const daysCount = s.daily_outputs.length;
             const baseTarget = Math.floor(s.total_target_qty / daysCount);
             const remainder = s.total_target_qty % daysCount;
             const progress = s.total_target_qty > 0 ? Math.round((s.total_actual_qty / s.total_target_qty) * 100) : 0;
 
             html += `
-                <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
-                    <td class="px-6 py-4 font-semibold text-slate-500 text-xs">${idx + 1}</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 bg-slate-900 text-white rounded-md text-xs font-bold">
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-bold border border-slate-700">
                             ${s.line_code}
                         </span>
                     </td>
-                    <td class="px-6 py-4">
-                        <span class="font-bold text-slate-900 text-sm block">${s.order_no}</span>
-                        <span class="text-xs text-slate-500">${s.buyer} &bull; ${s.style}</span>
+                    <td class="py-3 px-4">
+                        <strong class="text-white block">${s.order_no}</strong>
+                        <span class="text-slate-400 text-[11px]">${s.buyer}</span>
                     </td>
-                    <td class="px-6 py-4 text-xs text-slate-600">
-                        <div class="font-medium">${this.formatDate(s.start_date)} -</div>
-                        <div class="font-bold ${s.shifted_days > 0 ? 'text-amber-600' : 'text-slate-800'}">${this.formatDate(s.finish_date)}</div>
+                    <td class="py-3 px-4 text-slate-200">${s.style}</td>
+                    <td class="py-3 px-4">
+                        <div class="text-slate-300">${s.start_date} s/d</div>
+                        <div class="font-bold ${s.shifted_days > 0 ? 'text-amber-400' : 'text-slate-100'}">${s.finish_date}</div>
                     </td>
-                    <td class="px-6 py-4 text-xs font-semibold text-slate-800">
-                        ${s.total_target_qty.toLocaleString('id-ID')} pcs
+                    <td class="py-3 px-4 text-right font-bold text-white">${s.total_target_qty.toLocaleString('id-ID')}</td>
+                    <td class="py-3 px-4 text-right font-bold text-emerald-400">
+                        ${s.total_actual_qty.toLocaleString('id-ID')} 
+                        <span class="text-[10px] text-slate-500 font-normal">(${progress}%)</span>
                     </td>
-                    <td class="px-6 py-4 text-xs">
-                        <div class="font-bold text-indigo-700">${s.total_actual_qty.toLocaleString('id-ID')} pcs</div>
-                        <div class="text-[11px] text-slate-400">${progress}% tercapai</div>
+                    <td class="py-3 px-4 text-[11px] text-slate-400">
+                        <div>Base: <strong class="text-slate-200">${baseTarget} pcs/hari</strong></div>
+                        <div class="text-cyan-400">Final: ${baseTarget + remainder} pcs (+${remainder})</div>
                     </td>
-                    <td class="px-6 py-4 text-xs text-slate-600">
-                        <div>Rata-rata: <strong class="text-slate-800">${baseTarget} pcs</strong></div>
-                        <div class="text-[11px] text-indigo-600 font-semibold">Akhir: ${baseTarget + remainder} pcs (+${remainder})</div>
+                    <td class="py-3 px-4">
+                        ${s.shifted_days > 0 
+                            ? `<span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 text-[10px] font-bold">Mundur +${s.shifted_days}d</span>` 
+                            : `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px]">On-Track</span>`
+                        }
                     </td>
-                    <td class="px-6 py-4">
-                        ${this.getStatusBadge(s)}
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <button type="button" onclick="window.scheduleApp.openDetailModal(${s.id})" 
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer">
-                            <i class="fa-solid fa-sliders text-xs"></i>
-                            <span>Detail</span>
+                    <td class="py-3 px-4 text-center">
+                        <button type="button" onclick="window.scheduleApp.openSlideOver(${s.id})"
+                            class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-bold border border-slate-700 transition-colors cursor-pointer">
+                            Inspect
                         </button>
                     </td>
                 </tr>
@@ -409,219 +398,44 @@ class ScheduleApp {
     }
 
     /* -------------------------------------------------------------
-     * ACTION LIFECYCLE: BEFORE, PROCESS, AFTER (Poin 5 Readme)
+     * SLIDE-OVER DRAWER & BALANCING ENGINE
      * ------------------------------------------------------------- */
 
-    /**
-     * Tampilkan notifikasi Toast modern
-     */
-    showToast(message, type = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium transition-all duration-300 transform translate-y-4 opacity-0 animate-fade-in-up ${
-            type === 'success' 
-                ? 'bg-slate-900 text-white border-slate-800' 
-                : type === 'warning'
-                ? 'bg-amber-500 text-white border-amber-600'
-                : 'bg-rose-600 text-white border-rose-700'
-        }`;
-
-        let icon = type === 'success' ? 'fa-circle-check text-emerald-400' : type === 'warning' ? 'fa-triangle-exclamation text-white' : 'fa-circle-exclamation text-white';
-
-        toast.innerHTML = `
-            <i class="fa-solid ${icon} text-base"></i>
-            <span>${message}</span>
-        `;
-
-        container.appendChild(toast);
-
-        setTimeout(() => {
-            toast.classList.remove('translate-y-4', 'opacity-0');
-        }, 10);
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(10px)';
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
-    }
-
-    /**
-     * Buka Modal Buat Schedule
-     */
-    openCreateModal() {
-        const modal = document.getElementById('modal-create');
-        if (!modal) return;
-
-        // Reset form
-        document.getElementById('form-create-schedule').reset();
-        
-        // Default dates
-        const today = new Date().toISOString().split('T')[0];
-        const next3Days = new Date();
-        next3Days.setDate(next3Days.getDate() + 2);
-        const finishDefault = next3Days.toISOString().split('T')[0];
-
-        document.getElementById('create-start-date').value = today;
-        document.getElementById('create-finish-date').value = finishDefault;
-        document.getElementById('create-target-qty').value = 1000;
-
-        this.updateCreatePreview();
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    closeCreateModal() {
-        const modal = document.getElementById('modal-create');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    }
-
-    /**
-     * Live Preview kalkulasi target saat membuat schedule
-     */
-    updateCreatePreview() {
-        const start = document.getElementById('create-start-date').value;
-        const finish = document.getElementById('create-finish-date').value;
-        const totalQty = parseInt(document.getElementById('create-target-qty').value) || 0;
-
-        const previewBox = document.getElementById('create-calc-preview');
-        if (!start || !finish || totalQty <= 0) {
-            previewBox.innerHTML = `<p class="text-xs text-slate-400 italic">Pilih tanggal dan jumlah target untuk melihat formula pembagian harian.</p>`;
-            return;
-        }
-
-        const dist = this.calculateDailyDistribution(start, finish, totalQty);
-        if (dist.totalDays <= 0) {
-            previewBox.innerHTML = `<p class="text-xs text-rose-500 font-semibold">Tanggal finish tidak boleh lebih awal dari start!</p>`;
-            return;
-        }
-
-        let breakdownHtml = dist.dailyList.map((d, i) => {
-            const isLast = (i === dist.dailyList.length - 1);
-            return `
-                <div class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 text-xs flex justify-between items-center ${isLast ? 'border-indigo-400 bg-indigo-50/50' : ''}">
-                    <span class="text-slate-600 font-medium">Hari ke-${d.day_index} (${this.formatDate(d.date)})</span>
-                    <span class="font-bold ${isLast ? 'text-indigo-600' : 'text-slate-800'}">${d.target_qty} pcs ${isLast && dist.remainder > 0 ? `(+${dist.remainder})` : ''}</span>
-                </div>
-            `;
-        }).join('');
-
-        previewBox.innerHTML = `
-            <div class="space-y-2">
-                <div class="flex items-center justify-between text-xs pb-2 border-b border-indigo-100">
-                    <span class="text-indigo-900 font-semibold">Total Durasi: <strong>${dist.totalDays} Hari</strong></span>
-                    <span class="text-indigo-900 font-semibold">Base: <strong>${dist.baseTarget} pcs/hari</strong></span>
-                    <span class="text-indigo-900 font-semibold">Sisa Modulo: <strong class="text-indigo-600">+${dist.remainder} pcs (hari akhir)</strong></span>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                    ${breakdownHtml}
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * Submit Create Schedule dengan Lifecycle JS
-     */
-    async submitCreateSchedule(event) {
-        event.preventDefault();
-        
-        const lineCode = document.getElementById('create-line-code').value;
-        const orderNo = document.getElementById('create-order-no').value;
-        const buyer = document.getElementById('create-buyer').value;
-        const style = document.getElementById('create-style').value;
-        const startDate = document.getElementById('create-start-date').value;
-        const finishDate = document.getElementById('create-finish-date').value;
-        const totalQty = parseInt(document.getElementById('create-target-qty').value);
-
-        const btn = document.getElementById('btn-submit-create');
-        const origText = btn.innerHTML;
-
-        // 1. BEFORE PROCESS STATE
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses Schedule...`;
-
-        // 2. PROCESS (Simulate Async Network Delay)
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const dist = this.calculateDailyDistribution(startDate, finishDate, totalQty);
-        const targetLine = this.lines.find(l => l.code === lineCode);
-
-        const newSchedule = {
-            id: Date.now(),
-            order_id: Date.now() + 1,
-            line_id: targetLine ? targetLine.id : 1,
-            order_no: orderNo,
-            buyer: buyer,
-            style: style,
-            line_code: lineCode,
-            start_date: startDate,
-            finish_date: finishDate,
-            total_target_qty: totalQty,
-            total_actual_qty: 0,
-            status: 'scheduled',
-            shifted_days: 0,
-            daily_outputs: dist.dailyList
-        };
-
-        this.schedules.push(newSchedule);
-
-        // 3. AFTER PROCESS STATE
-        btn.disabled = false;
-        btn.innerHTML = origText;
-        this.closeCreateModal();
-
-        this.renderStats();
-        this.renderScheduleTimeline();
-        this.renderScheduleTable();
-
-        this.showToast(`Schedule ${orderNo} berhasil dibuat untuk ${lineCode}!`, 'success');
-    }
-
-    /**
-     * Buka Modal Detail & Dynamic Balancing
-     */
-    openDetailModal(scheduleId) {
+    openSlideOver(scheduleId) {
         const schedule = this.schedules.find(s => s.id === scheduleId);
         if (!schedule) return;
 
-        this.activeScheduleDetail = schedule;
+        this.activeSchedule = schedule;
+        const drawer = document.getElementById('slide-over-backdrop');
+        if (!drawer) return;
 
-        const modal = document.getElementById('modal-detail');
-        if (!modal) return;
+        document.getElementById('drawer-order-no').textContent = schedule.order_no;
+        document.getElementById('drawer-line-badge').textContent = schedule.line_code;
+        document.getElementById('drawer-buyer-style').textContent = `${schedule.buyer} • ${schedule.style}`;
+        
+        document.getElementById('drawer-total-target').textContent = `${schedule.total_target_qty.toLocaleString('id-ID')} pcs`;
+        document.getElementById('drawer-total-actual').textContent = `${schedule.total_actual_qty.toLocaleString('id-ID')} pcs`;
+        document.getElementById('drawer-start-date').textContent = schedule.start_date;
+        document.getElementById('drawer-finish-date').textContent = schedule.finish_date;
 
-        document.getElementById('detail-order-no').textContent = schedule.order_no;
-        document.getElementById('detail-style').textContent = schedule.style;
-        document.getElementById('detail-buyer').textContent = schedule.buyer;
-        document.getElementById('detail-line').textContent = schedule.line_code;
-        document.getElementById('detail-target-total').textContent = schedule.total_target_qty.toLocaleString('id-ID') + ' pcs';
-        document.getElementById('detail-actual-total').textContent = schedule.total_actual_qty.toLocaleString('id-ID') + ' pcs';
-        document.getElementById('detail-start').textContent = this.formatDate(schedule.start_date);
-        document.getElementById('detail-finish').textContent = this.formatDate(schedule.finish_date);
+        const days = schedule.daily_outputs.length;
+        const base = Math.floor(schedule.total_target_qty / days);
+        const rem = schedule.total_target_qty % days;
+        document.getElementById('drawer-formula-desc').textContent = `Base: ${base} pcs/hari | Sisa Modulo: +${rem} pcs (Hari ke-${days})`;
 
-        this.renderDetailDailyTable(schedule);
+        this.renderDrawerDailyRows(schedule);
 
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        drawer.classList.remove('hidden');
     }
 
-    closeDetailModal() {
-        const modal = document.getElementById('modal-detail');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-        this.activeScheduleDetail = null;
+    closeSlideOver() {
+        const drawer = document.getElementById('slide-over-backdrop');
+        if (drawer) drawer.classList.add('hidden');
+        this.activeSchedule = null;
     }
 
-    renderDetailDailyTable(schedule) {
-        const tbody = document.getElementById('detail-daily-tbody');
+    renderDrawerDailyRows(schedule) {
+        const tbody = document.getElementById('drawer-daily-tbody');
         if (!tbody) return;
 
         let html = '';
@@ -631,40 +445,30 @@ class ScheduleApp {
             const isDeficit = hasActual && diff < 0;
 
             html += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
-                    <td class="py-3 px-4 text-xs font-semibold text-slate-500">Hari ke-${d.day_index}</td>
-                    <td class="py-3 px-4 text-xs font-bold text-slate-800">${this.formatDate(d.date)}</td>
-                    <td class="py-3 px-4 text-xs font-semibold text-slate-700">${d.target_qty} pcs</td>
-                    <td class="py-3 px-4">
-                        <div class="flex items-center gap-2">
-                            <input type="number" min="0" 
-                                id="actual-input-${idx}" 
-                                value="${hasActual ? d.actual_qty : ''}" 
-                                placeholder="Input pcs"
-                                class="w-28 px-3 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
-                            <button type="button" 
-                                onclick="window.scheduleApp.processDailyBalancing(${schedule.id}, ${idx})"
-                                id="btn-save-daily-${idx}"
-                                class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer">
-                                Simpan
-                            </button>
-                        </div>
+                <tr class="hover:bg-slate-900 transition-colors">
+                    <td class="py-2.5 px-3 font-semibold text-slate-400">#${d.day_index}</td>
+                    <td class="py-2.5 px-3 text-slate-200 font-bold">${d.date}</td>
+                    <td class="py-2.5 px-3 text-slate-300 font-bold">${d.target_qty} pcs</td>
+                    <td class="py-2.5 px-3">
+                        <input type="number" min="0" id="drawer-input-${idx}" 
+                            value="${hasActual ? d.actual_qty : ''}" 
+                            placeholder="Input pcs"
+                            class="w-24 px-2.5 py-1 text-xs font-mono font-bold bg-slate-950 border border-slate-700 rounded text-cyan-400 focus:border-cyan-500 focus:outline-none"
+                        />
                     </td>
-                    <td class="py-3 px-4 text-xs">
+                    <td class="py-2.5 px-3">
                         ${hasActual ? `
-                            <span class="inline-flex items-center gap-1 font-bold ${isDeficit ? 'text-rose-600' : 'text-emerald-600'}">
-                                <i class="fa-solid ${isDeficit ? 'fa-arrow-down' : 'fa-arrow-up'} text-[10px]"></i>
+                            <span class="font-bold font-mono ${isDeficit ? 'text-amber-400' : 'text-emerald-400'}">
                                 ${diff > 0 ? '+' : ''}${diff} pcs
                             </span>
-                        ` : `<span class="text-slate-400 italic">Belum diinput</span>`}
+                        ` : `<span class="text-slate-600">-</span>`}
                     </td>
-                    <td class="py-3 px-4 text-xs">
-                        ${hasActual ? `
-                            <span class="px-2 py-0.5 rounded-full font-semibold text-[11px] ${isDeficit ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}">
-                                ${isDeficit ? 'Auto-Balanced' : 'Tercapai'}
-                            </span>
-                        ` : `<span class="text-slate-400">-</span>`}
+                    <td class="py-2.5 px-3 text-right">
+                        <button type="button" id="btn-save-drawer-${idx}"
+                            onclick="window.scheduleApp.commitDailyActual(${schedule.id}, ${idx})"
+                            class="px-2.5 py-1 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all cursor-pointer">
+                            Simpan
+                        </button>
                     </td>
                 </tr>
             `;
@@ -674,31 +478,31 @@ class ScheduleApp {
     }
 
     /**
-     * Proses Balancing Dinamis & Efek Domino Kemunduran (Poin 3 Readme)
+     * Commit Aktual Output & Trigger Dynamic Cascade Balancing (Poin 3 Readme)
      */
-    async processDailyBalancing(scheduleId, dayIdx) {
+    async commitDailyActual(scheduleId, dayIdx) {
         const schedule = this.schedules.find(s => s.id === scheduleId);
         if (!schedule) return;
 
-        const inputElem = document.getElementById(`actual-input-${dayIdx}`);
-        const saveBtn = document.getElementById(`btn-save-daily-${dayIdx}`);
+        const inputElem = document.getElementById(`drawer-input-${dayIdx}`);
+        const saveBtn = document.getElementById(`btn-save-drawer-${dayIdx}`);
         const actualVal = parseInt(inputElem.value);
 
         if (isNaN(actualVal) || actualVal < 0) {
-            this.showToast('Masukkan nilai actual output yang valid (>= 0)!', 'error');
+            this.showToast('Kuantitas actual output tidak valid!', 'error');
             return;
         }
 
-        // 1. BEFORE PROCESS: Button loading state
-        const origBtnText = saveBtn.innerHTML;
+        // 1. BEFORE PROCESS: Loading spinner & disable
+        const origText = saveBtn.innerHTML;
         saveBtn.disabled = true;
-        saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+        saveBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
         inputElem.disabled = true;
 
-        this.showToast('Menganalisis balancing & efek cascade...', 'warning');
+        this.showToast('Menghitung auto-balancing & cascade collision...', 'info');
 
-        // 2. PROCESS (Async simulation)
-        await new Promise(res => setTimeout(res, 600));
+        // 2. PROCESS (Simulate Async Network Delay)
+        await new Promise(r => setTimeout(r, 450));
 
         const targetRecord = schedule.daily_outputs[dayIdx];
         targetRecord.actual_qty = actualVal;
@@ -707,26 +511,24 @@ class ScheduleApp {
         const deficit = targetRecord.target_qty - actualVal;
         targetRecord.deficit = Math.max(0, deficit);
 
-        // Hitung total aktual baru
-        let newTotalActual = 0;
+        // Update total actual
+        let totalActual = 0;
         schedule.daily_outputs.forEach(d => {
-            if (d.actual_qty !== null) newTotalActual += d.actual_qty;
+            if (d.actual_qty !== null) totalActual += d.actual_qty;
         });
-        schedule.total_actual_qty = newTotalActual;
+        schedule.total_actual_qty = totalActual;
 
-        let cascadeMessage = '';
+        let cascadeSummary = '';
 
-        // Sesuai Ketentuan Poin 3:
-        // "jika hasilnya actual output kurang dari target output per harinya untuk balance qty dilanjutkan atau menambah untuk target output hari berikutnya 
-        // sehingga range tanggal schedule akan bertambah hari dan bertambahnya hari tersebut mempengaruhi kemunduran schedule setelahnya."
+        // JIKA AKTUAL KURANG DARI TARGET: BALANCING & CASCADE EFFECT
         if (deficit > 0) {
-            // Skenario 1: Jika masih ada hari berikutnya, tambahkan defisit ke target berikutnya
             if (dayIdx + 1 < schedule.daily_outputs.length) {
+                // Alihkan sisa ke target hari berikutnya
                 schedule.daily_outputs[dayIdx + 1].target_qty += deficit;
-                cascadeMessage = `Defisit ${deficit} pcs dialihkan ke target hari ke-${dayIdx + 2}.`;
+                cascadeSummary = `Defisit ${deficit} pcs ditambahkan ke target hari berikutnya (#${dayIdx + 2}).`;
             } else {
-                // Skenario 2: Jika sudah di hari terakhir, jadwalkan penambahan hari baru di akhir schedule!
-                const lastDate = new Date(schedule.finish_date);
+                // Hari terakhir defisit -> tambah range schedule (+1 hari)
+                const lastDate = new Date(schedule.finish_date + 'T00:00:00');
                 lastDate.setDate(lastDate.getDate() + 1);
                 const extraDateStr = lastDate.toISOString().split('T')[0];
 
@@ -743,19 +545,18 @@ class ScheduleApp {
                 schedule.shifted_days += 1;
                 schedule.status = 'delayed';
 
-                // CASCADE RESCHEDULING KE JADWAL SETELAHNYA PADA LINE YANG SAMA
-                const subsequentSchedules = this.schedules.filter(s => 
-                    s.line_code === schedule.line_code && 
-                    s.id !== schedule.id && 
+                // CASCADE DOMINO EFFECT: Geser semua schedule setelahnya pada line yang sama
+                const subsequent = this.schedules.filter(s => 
+                    s.line_code === schedule.line_code &&
+                    s.id !== schedule.id &&
                     new Date(s.start_date) <= new Date(extraDateStr)
                 );
 
-                if (subsequentSchedules.length > 0) {
-                    subsequentSchedules.forEach(sub => {
-                        const oldStart = new Date(sub.start_date);
-                        const oldFinish = new Date(sub.finish_date);
-                        
-                        // Geser 1 hari
+                if (subsequent.length > 0) {
+                    subsequent.forEach(sub => {
+                        const oldStart = new Date(sub.start_date + 'T00:00:00');
+                        const oldFinish = new Date(sub.finish_date + 'T00:00:00');
+
                         oldStart.setDate(oldStart.getDate() + 1);
                         oldFinish.setDate(oldFinish.getDate() + 1);
 
@@ -763,84 +564,229 @@ class ScheduleApp {
                         sub.finish_date = oldFinish.toISOString().split('T')[0];
                         sub.shifted_days += 1;
 
-                        // Geser tanggal daily outputs
                         sub.daily_outputs.forEach(d => {
-                            const dDate = new Date(d.date);
+                            const dDate = new Date(d.date + 'T00:00:00');
                             dDate.setDate(dDate.getDate() + 1);
                             d.date = dDate.toISOString().split('T')[0];
                         });
                     });
 
-                    cascadeMessage = `Defisit ${deficit} pcs menyebabkan jadwal bertambah 1 hari! Efek domino: ${subsequentSchedules.length} order berikutnya pada ${schedule.line_code} otomatis mundur.`;
+                    cascadeSummary = `Defisit ${deficit} pcs memicu penambahan durasi (+1d)! Order ${subsequent.map(s => s.order_no).join(', ')} otomatis bergeser mundur.`;
                 } else {
-                    cascadeMessage = `Defisit ${deficit} pcs menyebabkan schedule bertambah 1 hari hingga ${this.formatDate(extraDateStr)}.`;
+                    cascadeSummary = `Defisit ${deficit} pcs menyebabkan schedule bertambah 1 hari hingga ${extraDateStr}.`;
                 }
             }
         } else {
-            cascadeMessage = `Target hari ke-${dayIdx + 1} tercapai dengan sukses!`;
+            cascadeSummary = `Target hari ke-${dayIdx + 1} tercapai dengan output ${actualVal} pcs.`;
         }
 
-        // 3. AFTER PROCESS: Restore UI & re-render
+        // 3. AFTER PROCESS: Restore button & update view
         saveBtn.disabled = false;
-        saveBtn.innerHTML = origBtnText;
+        saveBtn.innerHTML = origText;
         inputElem.disabled = false;
 
-        this.renderStats();
-        this.renderScheduleTimeline();
-        this.renderScheduleTable();
-        this.renderDetailDailyTable(schedule);
+        this.renderTelemetry();
+        this.renderGanttMatrix();
+        this.renderTabularData();
+        this.renderDrawerDailyRows(schedule);
 
-        // Update modal header numbers
-        document.getElementById('detail-actual-total').textContent = schedule.total_actual_qty.toLocaleString('id-ID') + ' pcs';
-        document.getElementById('detail-finish').textContent = this.formatDate(schedule.finish_date);
+        document.getElementById('drawer-total-actual').textContent = `${schedule.total_actual_qty.toLocaleString('id-ID')} pcs`;
+        document.getElementById('drawer-finish-date').textContent = schedule.finish_date;
 
-        this.showToast(cascadeMessage, deficit > 0 ? 'warning' : 'success');
+        this.showToast(cascadeSummary, deficit > 0 ? 'warning' : 'success');
     }
 
-    setupEventListeners() {
-        // Line filter pills
+    /* -------------------------------------------------------------
+     * CREATE SCHEDULE MODAL & EVENTS
+     * ------------------------------------------------------------- */
+
+    openCreateModal() {
+        const modal = document.getElementById('modal-create');
+        if (!modal) return;
+
+        document.getElementById('create-start-date').value = '2026-03-08';
+        document.getElementById('create-finish-date').value = '2026-03-11';
+        document.getElementById('create-target-qty').value = 1000;
+
+        this.updateCreatePreview();
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    closeCreateModal() {
+        const modal = document.getElementById('modal-create');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    updateCreatePreview() {
+        const start = document.getElementById('create-start-date').value;
+        const finish = document.getElementById('create-finish-date').value;
+        const qty = parseInt(document.getElementById('create-target-qty').value) || 0;
+        const container = document.getElementById('create-calc-preview');
+        if (!container) return;
+
+        if (!start || !finish || qty <= 0) {
+            container.innerHTML = `<span class="text-slate-500 italic">Lengkapi tanggal dan target QTY untuk melihat pembagian.</span>`;
+            return;
+        }
+
+        const dist = this.calculateDailyDistribution(start, finish, qty);
+        if (dist.totalDays <= 0) {
+            container.innerHTML = `<span class="text-rose-400 font-bold">Tanggal finish tidak boleh lebih awal dari start!</span>`;
+            return;
+        }
+
+        let pillsHtml = dist.dailyList.map(d => {
+            const isLast = d.day_index === dist.totalDays;
+            return `
+                <div class="px-2 py-1 rounded bg-slate-900 border ${isLast ? 'border-cyan-500 text-cyan-300' : 'border-slate-800 text-slate-300'} flex justify-between">
+                    <span>#${d.day_index} (${this.formatDate(d.date)})</span>
+                    <strong class="font-mono">${d.target_qty} pcs ${isLast && dist.remainder > 0 ? `(+${dist.remainder})` : ''}</strong>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex justify-between text-slate-400 pb-1 border-b border-slate-800">
+                    <span>Durasi: <strong class="text-white">${dist.totalDays} Hari</strong></span>
+                    <span>Base: <strong class="text-slate-200">${dist.baseTarget} pcs/hari</strong></span>
+                    <span class="text-cyan-400 font-bold">Sisa Modulo: +${dist.remainder} pcs</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto">
+                    ${pillsHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    async submitCreateSchedule(event) {
+        event.preventDefault();
+
+        const lineCode = document.getElementById('create-line-code').value;
+        const orderNo = document.getElementById('create-order-no').value;
+        const buyer = document.getElementById('create-buyer').value;
+        const style = document.getElementById('create-style').value;
+        const start = document.getElementById('create-start-date').value;
+        const finish = document.getElementById('create-finish-date').value;
+        const totalQty = parseInt(document.getElementById('create-target-qty').value);
+
+        const btn = document.getElementById('btn-submit-create');
+        const origText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...`;
+
+        await new Promise(r => setTimeout(r, 400));
+
+        const dist = this.calculateDailyDistribution(start, finish, totalQty);
+
+        const newSchedule = {
+            id: Date.now(),
+            line_code: lineCode,
+            order_no: orderNo,
+            buyer: buyer,
+            style: style,
+            start_date: start,
+            finish_date: finish,
+            total_target_qty: totalQty,
+            total_actual_qty: 0,
+            status: 'scheduled',
+            shifted_days: 0,
+            daily_outputs: dist.dailyList
+        };
+
+        this.schedules.push(newSchedule);
+
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        this.closeCreateModal();
+
+        this.renderTelemetry();
+        this.renderGanttMatrix();
+        this.renderTabularData();
+
+        this.showToast(`Schedule ${orderNo} berhasil dialokasikan pada ${lineCode}!`, 'success');
+    }
+
+    showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border text-xs font-mono font-semibold shadow-xl transition-all duration-300 transform translate-y-3 opacity-0 ${
+            type === 'success' 
+                ? 'bg-slate-900 border-cyan-500/80 text-cyan-300' 
+                : type === 'warning'
+                ? 'bg-amber-950 border-amber-500 text-amber-200'
+                : 'bg-slate-900 border-slate-700 text-slate-200'
+        }`;
+
+        let icon = type === 'success' ? 'fa-circle-check text-cyan-400' : type === 'warning' ? 'fa-triangle-exclamation text-amber-400' : 'fa-circle-info text-blue-400';
+
+        toast.innerHTML = `
+            <i class="fa-solid ${icon} text-sm"></i>
+            <span class="flex-1">${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.remove('translate-y-3', 'opacity-0');
+        }, 10);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    bindEvents() {
+        // Line filters
         document.querySelectorAll('.filter-line-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-line-btn').forEach(b => {
-                    b.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
-                    b.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+                    b.classList.remove('bg-cyan-500', 'text-slate-950');
+                    b.classList.add('bg-slate-800', 'text-slate-300');
                 });
-                btn.classList.add('bg-indigo-600', 'text-white', 'shadow-xs');
-                btn.classList.remove('bg-white', 'text-slate-600');
+                btn.classList.add('bg-cyan-500', 'text-slate-950');
+                btn.classList.remove('bg-slate-800', 'text-slate-300');
 
                 this.selectedLine = btn.getAttribute('data-line');
-                this.renderScheduleTimeline();
-                this.renderScheduleTable();
+                this.renderGanttMatrix();
+                this.renderTabularData();
             });
         });
 
-        // View toggle (Timeline vs Table)
-        const toggleTimeline = document.getElementById('toggle-view-timeline');
+        // View toggle
+        const toggleGantt = document.getElementById('toggle-view-gantt');
         const toggleTable = document.getElementById('toggle-view-table');
-        const timelineView = document.getElementById('view-timeline');
-        const tableView = document.getElementById('view-table');
+        const viewGantt = document.getElementById('view-gantt');
+        const viewTable = document.getElementById('view-table');
 
-        if (toggleTimeline && toggleTable) {
-            toggleTimeline.addEventListener('click', () => {
-                this.activeView = 'timeline';
-                toggleTimeline.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
-                toggleTimeline.classList.remove('text-slate-500');
-                toggleTable.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
-                toggleTable.classList.add('text-slate-500');
+        if (toggleGantt && toggleTable) {
+            toggleGantt.addEventListener('click', () => {
+                toggleGantt.classList.add('bg-slate-800', 'text-cyan-400', 'border-slate-700');
+                toggleGantt.classList.remove('text-slate-400');
+                toggleTable.classList.remove('bg-slate-800', 'text-cyan-400', 'border-slate-700');
+                toggleTable.classList.add('text-slate-400');
 
-                timelineView.classList.remove('hidden');
-                tableView.classList.add('hidden');
+                viewGantt.classList.remove('hidden');
+                viewTable.classList.add('hidden');
             });
 
             toggleTable.addEventListener('click', () => {
-                this.activeView = 'table';
-                toggleTable.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
-                toggleTable.classList.remove('text-slate-500');
-                toggleTimeline.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
-                toggleTimeline.classList.add('text-slate-500');
+                toggleTable.classList.add('bg-slate-800', 'text-cyan-400', 'border-slate-700');
+                toggleTable.classList.remove('text-slate-400');
+                toggleGantt.classList.remove('bg-slate-800', 'text-cyan-400', 'border-slate-700');
+                toggleGantt.classList.add('text-slate-400');
 
-                tableView.classList.remove('hidden');
-                timelineView.classList.add('hidden');
+                viewTable.classList.remove('hidden');
+                viewGantt.classList.add('hidden');
             });
         }
 
@@ -855,7 +801,6 @@ class ScheduleApp {
     }
 }
 
-// Instantiate and expose globally
 document.addEventListener('DOMContentLoaded', () => {
-    window.scheduleApp = new ScheduleApp();
+    window.scheduleApp = new ProductionScheduler();
 });

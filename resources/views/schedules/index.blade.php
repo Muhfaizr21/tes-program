@@ -1,190 +1,316 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Penjadwalan Sewing Line')
+@section('title', 'Production Control Room & Gantt Scheduling')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+<div class="flex-1 flex flex-col px-4 lg:px-6 py-5 max-w-[1600px] mx-auto w-full gap-5">
 
-    <!-- Hero Title & Subtitle -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Penjadwalan Produksi Sewing Line
-            </h1>
-            <p class="text-sm text-slate-500 mt-1">
-                Alokasi pesanan, formula pembagian target harian, dan dynamic balancing dengan cascade rescheduling.
-            </p>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <!-- View Mode Switcher -->
-            <div class="flex bg-slate-200/80 p-1 rounded-xl text-xs font-semibold">
-                <button type="button" id="toggle-view-timeline" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-slate-900 shadow-xs transition-all cursor-pointer">
-                    <i class="fa-solid fa-chart-gantt"></i>
-                    <span>Timeline Board</span>
-                </button>
-                <button type="button" id="toggle-view-table" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
-                    <i class="fa-solid fa-table-list"></i>
-                    <span>Tabel Detail</span>
-                </button>
+    <!-- KPI Operations Strip (Industrial Telemetry Strip) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <!-- Metric 1: Scheduled Orders -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+            <div>
+                <span class="text-[11px] font-mono uppercase text-slate-400 font-semibold tracking-wider block">Active Orders</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span class="text-2xl font-mono font-extrabold text-white tracking-tight" id="stat-orders">0</span>
+                    <span class="text-xs text-slate-400 font-medium">batches</span>
+                </div>
             </div>
-
-            <!-- Master Data Modal Button -->
-            <button type="button" onclick="window.scheduleApp.openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer">
-                <i class="fa-solid fa-plus text-xs"></i>
-                <span class="hidden sm:inline">Tambah</span> Schedule
-            </button>
+            <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700/60 flex items-center justify-center text-cyan-400 text-sm">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
         </div>
-    </div>
 
-    <!-- 4 KPI Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <!-- Card 1: Active Lines -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <!-- Metric 2: Target QTY Allocation -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+            <div>
+                <span class="text-[11px] font-mono uppercase text-slate-400 font-semibold tracking-wider block">Total Target Qty</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span class="text-2xl font-mono font-extrabold text-white tracking-tight" id="stat-target">0</span>
+                    <span class="text-xs text-slate-400 font-medium">pcs</span>
+                </div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700/60 flex items-center justify-center text-blue-400 text-sm">
+                <i class="fa-solid fa-bullseye"></i>
+            </div>
+        </div>
+
+        <!-- Metric 3: Actual Realized Output -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Sewing Line</span>
-                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
-                    <i class="fa-solid fa-industry"></i>
-                </div>
+                <span class="text-[11px] font-mono uppercase text-slate-400 font-semibold tracking-wider">Actual Needle Output</span>
+                <span class="text-xs font-mono font-bold text-emerald-400" id="stat-percent">0%</span>
             </div>
-            <div class="mt-4">
-                <div class="text-2xl font-black text-slate-900 tracking-tight" id="stat-lines">3</div>
-                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Semua line aktif beroperasi</span>
-                </p>
+            <div class="mt-1 flex items-baseline gap-2">
+                <span class="text-2xl font-mono font-extrabold text-emerald-400 tracking-tight" id="stat-actual">0</span>
+                <span class="text-xs text-slate-400 font-medium">pcs</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                <div id="stat-progress-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
         </div>
 
-        <!-- Card 2: Total Orders Scheduled -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Schedule</span>
-                <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center text-sm font-bold">
-                    <i class="fa-solid fa-clipboard-list"></i>
+        <!-- Metric 4: Cascade / Auto-Balancing Health -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+            <div>
+                <span class="text-[11px] font-mono uppercase text-slate-400 font-semibold tracking-wider block">Cascade Health</span>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-sm font-bold font-mono text-slate-200" id="stat-cascade-summary">Synchronized</span>
                 </div>
+                <span class="text-[10px] text-slate-400 mt-0.5 block" id="stat-cascade-detail">No domino delays detected</span>
             </div>
-            <div class="mt-4">
-                <div class="text-2xl font-black text-slate-900 tracking-tight" id="stat-orders">3</div>
-                <p class="text-xs text-slate-500 mt-1">Antrian produksi garmen</p>
-            </div>
-        </div>
-
-        <!-- Card 3: Target Output vs Actual Output -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Realisasi Output</span>
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
-                    <i class="fa-solid fa-chart-pie"></i>
-                </div>
-            </div>
-            <div class="mt-3">
-                <div class="flex items-baseline justify-between">
-                    <span class="text-xl font-black text-slate-900 tracking-tight" id="stat-actual">900 pcs</span>
-                    <span class="text-xs font-bold text-indigo-600" id="stat-percent">29%</span>
-                </div>
-                <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
-                    <div id="stat-progress-bar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 29%"></div>
-                </div>
-                <p class="text-[11px] text-slate-400 mt-1.5">Dari total target: <strong class="text-slate-600" id="stat-target">3.050 pcs</strong></p>
-            </div>
-        </div>
-
-        <!-- Card 4: Cascade Balancing Status -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Status Balancing</span>
-                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm font-bold">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                </div>
-            </div>
-            <div class="mt-4">
-                <div class="text-base font-bold text-slate-900" id="stat-delayed">Semua On-Track</div>
-                <p class="text-[11px] text-slate-500 mt-1">
-                    Auto-shift aktif saat defisit
-                </p>
+            <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700/60 flex items-center justify-center text-amber-400 text-sm">
+                <i class="fa-solid fa-timeline"></i>
             </div>
         </div>
     </div>
 
-    <!-- Filter Line Bar -->
-    <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Filter Line:</span>
-            <button type="button" data-line="all" class="filter-line-btn px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs transition-all cursor-pointer">
-                Semua Line
+    <!-- Production Control Toolbar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        
+        <!-- Left: Line Selector Filter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto">
+            <span class="text-[11px] font-mono uppercase text-slate-500 font-bold px-2">Line:</span>
+            <button type="button" data-line="all" class="filter-line-btn px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-cyan-500 text-slate-950 transition-all cursor-pointer">
+                ALL LINES
             </button>
-            <button type="button" data-line="LINE-01" class="filter-line-btn px-3 py-1.5 text-xs font-bold rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            <button type="button" data-line="LINE-01" class="filter-line-btn px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all cursor-pointer">
                 LINE-01 (Kemeja)
             </button>
-            <button type="button" data-line="LINE-02" class="filter-line-btn px-3 py-1.5 text-xs font-bold rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            <button type="button" data-line="LINE-02" class="filter-line-btn px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all cursor-pointer">
                 LINE-02 (Jacket)
             </button>
-            <button type="button" data-line="LINE-03" class="filter-line-btn px-3 py-1.5 text-xs font-bold rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
-                LINE-03 (Pants)
+            <button type="button" data-line="LINE-03" class="filter-line-btn px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all cursor-pointer">
+                LINE-03 (Chino)
             </button>
         </div>
 
-        <div class="text-xs text-slate-500 font-medium px-2 flex items-center gap-2">
-            <i class="fa-solid fa-circle-info text-indigo-500"></i>
-            <span>Sisa bagi target output selalu ditempatkan pada tanggal akhir schedule.</span>
+        <!-- Center: Date Scrubber Indicator -->
+        <div class="hidden lg:flex items-center gap-2 font-mono text-xs text-slate-400 bg-slate-950/80 px-3 py-1 rounded-lg border border-slate-800">
+            <i class="fa-solid fa-calendar-days text-cyan-400"></i>
+            <span>Timeline Window: <strong class="text-slate-200">01 Mar 2026 - 14 Mar 2026</strong> (14 Days)</span>
         </div>
-    </div>
 
-    <!-- VIEW 1: TIMELINE & GANTT BOARD -->
-    <div id="view-timeline" class="transition-all">
-        <div id="timeline-container">
-            <!-- Dynamically populated by window.scheduleApp -->
-        </div>
-    </div>
-
-    <!-- VIEW 2: DATA TABLE VIEW -->
-    <div id="view-table" class="hidden transition-all">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50/80 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
-                            <th class="px-6 py-4">No</th>
-                            <th class="px-6 py-4">Line</th>
-                            <th class="px-6 py-4">Order & Buyer</th>
-                            <th class="px-6 py-4">Range Tanggal</th>
-                            <th class="px-6 py-4">Target Total</th>
-                            <th class="px-6 py-4">Aktual Output</th>
-                            <th class="px-6 py-4">Target / Hari</th>
-                            <th class="px-6 py-4">Status</th>
-                            <th class="px-6 py-4 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="schedule-table-body" class="divide-y divide-slate-100">
-                        <!-- Dynamically populated by window.scheduleApp -->
-                    </tbody>
-                </table>
+        <!-- Right: View Modes -->
+        <div class="flex items-center gap-2">
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-mono">
+                <button type="button" id="toggle-view-gantt" class="flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-800 text-cyan-400 font-bold border border-slate-700 shadow-xs cursor-pointer">
+                    <i class="fa-solid fa-bars-progress text-xs"></i>
+                    <span>Gantt Matrix</span>
+                </button>
+                <button type="button" id="toggle-view-table" class="flex items-center gap-1.5 px-3 py-1 rounded-md text-slate-400 hover:text-white font-semibold transition-colors cursor-pointer">
+                    <i class="fa-solid fa-table text-xs"></i>
+                    <span>Tabular Data</span>
+                </button>
             </div>
+        </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 1: INTERACTIVE GANTT TIMELINE MATRIX                             -->
+    <!-- ===================================================================== -->
+    <div id="view-gantt" class="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xs">
+        
+        <!-- Gantt Instructions & Legend Bar -->
+        <div class="px-4 py-2.5 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2 font-mono">
+            <div class="flex items-center gap-3">
+                <span class="text-slate-500 uppercase font-bold text-[10px]">Legend:</span>
+                <span class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-cyan-500"></span> On-Track Schedule
+                </span>
+                <span class="flex items-center gap-1.5 text-[11px] text-amber-400">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-amber-500 animate-pulse"></span> Auto-Shifted (+Delayed)
+                </span>
+                <span class="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> Completed
+                </span>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-hand-pointer text-cyan-400 text-xs"></i>
+                <span>Klik kartu order untuk membuka Drawer Input Aktual & Balancing Harian.</span>
+            </div>
+        </div>
+
+        <!-- Gantt Matrix Scrollable Viewport -->
+        <div class="overflow-x-auto">
+            <div class="min-w-[1100px]">
+                
+                <!-- Dynamic Gantt Calendar Header (Rendered by JS) -->
+                <div id="gantt-header-row" class="gantt-grid-header bg-slate-950/90 border-b border-slate-800 text-[11px] font-mono select-none">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <!-- Gantt Line Rows Container -->
+                <div id="gantt-body-container" class="divide-y divide-slate-800/80">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Gantt Footer Status -->
+        <div class="p-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-500">
+            <span>Algoritma Penjadwalan: $\lfloor Q / N \rfloor$ per hari, sisa modulo $(Q \pmod N)$ ditempatkan pada tanggal finish.</span>
+            <span class="text-slate-400">Sewing Line Synchronization: <strong class="text-emerald-400">Connected</strong></span>
+        </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 2: HIGH-DENSITY TABULAR DATA                                     -->
+    <!-- ===================================================================== -->
+    <div id="view-table" class="hidden flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xs">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-950 border-b border-slate-800 font-mono text-[11px] uppercase tracking-wider text-slate-400">
+                        <th class="py-3 px-4">Line ID</th>
+                        <th class="py-3 px-4">PO & Buyer</th>
+                        <th class="py-3 px-4">Style Specification</th>
+                        <th class="py-3 px-4">Date Window</th>
+                        <th class="py-3 px-4 text-right">Target (pcs)</th>
+                        <th class="py-3 px-4 text-right">Actual (pcs)</th>
+                        <th class="py-3 px-4">Daily Target Allocation</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tabular-body" class="divide-y divide-slate-800/80 font-mono">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
         </div>
     </div>
 
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL 1: BUAT SCHEDULE BARU                                               -->
+<!-- SLIDE-OVER DRAWER: TECHNICAL INSPECTOR & AUTO-BALANCING COCKPIT           -->
 <!-- ========================================================================= -->
-<div id="modal-create" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-fade-in-up">
+<div id="slide-over-backdrop" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-xs transition-opacity duration-300">
+    <div class="fixed inset-y-0 right-0 max-w-2xl w-full bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col animate-drawer-in">
         
-        <!-- Modal Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <!-- Drawer Header -->
+        <div class="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+                <div class="w-9 h-9 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/80 flex items-center justify-center font-bold text-sm">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="drawer-order-no" class="font-mono font-bold text-white text-base">PO-2026-001</span>
+                        <span id="drawer-line-badge" class="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-slate-800 text-cyan-400 border border-slate-700">LINE-01</span>
+                    </div>
+                    <span id="drawer-buyer-style" class="text-xs text-slate-400">Uniqlo Japan &bull; Dry-EX Polo Shirt</span>
+                </div>
+            </div>
+            
+            <button type="button" onclick="window.scheduleApp.closeSlideOver()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <!-- Drawer Content Body (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+            <!-- Target Allocation & Math Formula Box -->
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-3 font-mono">
+                <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-800/80">
+                    <span class="text-slate-400 font-bold uppercase text-[10px]">Formula Matematika Target:</span>
+                    <span class="text-cyan-400 font-semibold" id="drawer-formula-desc">Base: 333 pcs/hari | Remainder: +1 pcs</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase block">Total Target</span>
+                        <strong class="text-white text-sm" id="drawer-total-target">1,000 pcs</strong>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase block">Actual Output</span>
+                        <strong class="text-emerald-400 text-sm" id="drawer-total-actual">300 pcs</strong>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase block">Start Date</span>
+                        <strong class="text-slate-300 text-xs" id="drawer-start-date">2026-03-01</strong>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase block">Finish Date</span>
+                        <strong class="text-slate-300 text-xs" id="drawer-finish-date">2026-03-03</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cascade Warning / Domino Alert Banner -->
+            <div id="drawer-cascade-box" class="p-4 rounded-xl border border-amber-800/60 bg-amber-950/30 flex items-start gap-3 text-xs text-amber-200">
+                <i class="fa-solid fa-circle-nodes text-amber-400 text-base mt-0.5"></i>
+                <div class="space-y-1">
+                    <strong class="font-bold text-amber-300 block text-xs">Mekanisme Dynamic Balancing & Cascade Rescheduling</strong>
+                    <p class="text-amber-200/90 text-[11px] leading-relaxed">
+                        Input aktual output harian di bawah target akan menghasilkan defisit. Defisit dialihkan ke hari berikutnya atau menambah hari schedule (+1d). Penambahan hari secara otomatis memundurkan seluruh order berikutnya pada sewing line ini (*cascade domino effect*).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Daily Target Breakdown & Actual Input Matrix -->
+            <div class="space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
+                        Rincian Alokasi Harian & Input Aktual
+                    </h4>
+                    <span class="text-[10px] font-mono text-slate-400">Poin 2 & 3 Spesifikasi Readme</span>
+                </div>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead>
+                            <tr class="bg-slate-900 border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-400">
+                                <th class="py-2.5 px-3">Hari</th>
+                                <th class="py-2.5 px-3">Tanggal</th>
+                                <th class="py-2.5 px-3">Target Output</th>
+                                <th class="py-2.5 px-3">Aktual Output</th>
+                                <th class="py-2.5 px-3">Deviasi</th>
+                                <th class="py-2.5 px-3 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drawer-daily-tbody" class="divide-y divide-slate-800/80">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+            <span class="text-[11px] font-mono text-slate-500">Tekan [ESC] untuk menutup panel.</span>
+            <button type="button" onclick="window.scheduleApp.closeSlideOver()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-bold transition-colors cursor-pointer">
+                Selesai
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: ALOKASI SCHEDULE BARU (HIGH-PRECISION FORM)                        -->
+<!-- ========================================================================= -->
+<div id="modal-create" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-slate-900 rounded-2xl max-w-xl w-full border border-slate-800 shadow-2xl overflow-hidden animate-drawer-in">
+        
+        <!-- Header -->
+        <div class="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/80 flex items-center justify-center font-bold text-sm">
                     <i class="fa-solid fa-calendar-plus"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-900 text-base">Buat Schedule Produksi Baru</h3>
-                    <p class="text-xs text-slate-500">Alokasikan order ke sewing line dengan formula target harian</p>
+                    <h3 class="font-bold text-white text-sm">Alokasi Schedule Produksi Baru</h3>
+                    <p class="text-xs text-slate-400">Atur penempatan order pada sewing line dan hitung pembagian target</p>
                 </div>
             </div>
-            <button type="button" onclick="window.scheduleApp.closeCreateModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg cursor-pointer">
-                <i class="fa-solid fa-xmark text-lg"></i>
+            <button type="button" onclick="window.scheduleApp.closeCreateModal()" class="text-slate-400 hover:text-white p-2 rounded-lg cursor-pointer">
+                <i class="fa-solid fa-xmark text-base"></i>
             </button>
         </div>
 
@@ -192,169 +318,75 @@
         <form id="form-create-schedule" onsubmit="window.scheduleApp.submitCreateSchedule(event)">
             <div class="p-6 space-y-4">
                 
-                <!-- Sewing Line Selection -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Sewing Line Target</label>
-                    <select id="create-line-code" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        <option value="LINE-01">LINE-01 - Sewing Line 01 (Kemeja & Polo) [Kapasitas: 400 pcs/hari]</option>
-                        <option value="LINE-02">LINE-02 - Sewing Line 02 (Outerwear & Jacket) [Kapasitas: 300 pcs/hari]</option>
-                        <option value="LINE-03">LINE-03 - Sewing Line 03 (Pants & Chino) [Kapasitas: 500 pcs/hari]</option>
+                    <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-1.5">Sewing Line Target</label>
+                    <select id="create-line-code" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono font-semibold text-slate-200 focus:border-cyan-500 focus:outline-none">
+                        <option value="LINE-01">LINE-01 &bull; Sewing Line 01 (Kemeja & Polo) [Kapasitas: 400 pcs/hari]</option>
+                        <option value="LINE-02">LINE-02 &bull; Sewing Line 02 (Outerwear & Jacket) [Kapasitas: 300 pcs/hari]</option>
+                        <option value="LINE-03">LINE-03 &bull; Sewing Line 03 (Pants & Chino) [Kapasitas: 500 pcs/hari]</option>
                     </select>
                 </div>
 
-                <!-- Order Info Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">No. Order / PO</label>
-                        <input type="text" id="create-order-no" required placeholder="Contoh: PO-2026-005" value="PO-2026-005"
-                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">No. Order / PO</label>
+                        <input type="text" id="create-order-no" required placeholder="PO-2026-004" value="PO-2026-004"
+                            class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 focus:border-cyan-500 focus:outline-none" />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Buyer</label>
-                        <input type="text" id="create-buyer" required placeholder="Contoh: Uniqlo / H&M" value="Uniqlo"
-                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Buyer / Brand</label>
+                        <input type="text" id="create-buyer" required placeholder="H&M Global" value="H&M Global"
+                            class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 focus:border-cyan-500 focus:outline-none" />
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Style / Item Name</label>
-                    <input type="text" id="create-style" required placeholder="Contoh: Premium Pique Polo Shirt" value="Premium Pique Polo Shirt"
-                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                    <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">Style / Model Garmen</label>
+                    <input type="text" id="create-style" required placeholder="Tailored Linen Blazer" value="Tailored Linen Blazer"
+                        class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 focus:border-cyan-500 focus:outline-none" />
                 </div>
 
-                <!-- Dates & Qty Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Start Sewing</label>
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Start Sewing</label>
                         <input type="date" id="create-start-date" required
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 focus:border-cyan-500 focus:outline-none" />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Finish Sewing</label>
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Finish Sewing</label>
                         <input type="date" id="create-finish-date" required
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 focus:border-cyan-500 focus:outline-none" />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Total Qty Target</label>
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Total Target Qty</label>
                         <input type="number" id="create-target-qty" min="1" required placeholder="1000"
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 focus:border-cyan-500 focus:outline-none" />
                     </div>
                 </div>
 
-                <!-- Live Target Calculation Preview Box -->
-                <div class="p-4 bg-indigo-50/60 rounded-xl border border-indigo-200/80">
-                    <div class="flex items-center gap-2 mb-2 text-indigo-950 font-bold text-xs uppercase tracking-wider">
-                        <i class="fa-solid fa-calculator text-indigo-600"></i>
-                        <span>Live Calculation Preview (Sisa di Hari Terakhir)</span>
+                <!-- Live Mathematical Preview Box -->
+                <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs">
+                    <div class="flex items-center gap-2 mb-2 text-cyan-400 font-bold uppercase text-[10px]">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>Live Distribution Preview (Sisa di Hari Akhir)</span>
                     </div>
                     <div id="create-calc-preview">
-                        <!-- Populated live by updateCreatePreview() -->
+                        <!-- Populated by JS -->
                     </div>
                 </div>
 
             </div>
 
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button type="button" onclick="window.scheduleApp.closeCreateModal()" class="px-4 py-2 text-slate-600 hover:text-slate-800 text-sm font-semibold rounded-xl cursor-pointer">
+            <div class="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-3 font-mono">
+                <button type="button" onclick="window.scheduleApp.closeCreateModal()" class="px-4 py-2 text-slate-400 hover:text-white text-xs font-semibold rounded-xl cursor-pointer">
                     Batal
                 </button>
-                <button type="submit" id="btn-submit-create" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold rounded-xl shadow-xs transition-all cursor-pointer">
-                    <i class="fa-solid fa-check text-xs"></i>
-                    <span>Simpan Schedule</span>
+                <button type="submit" id="btn-submit-create" class="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-xs transition-all cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Terapkan Schedule</span>
                 </button>
             </div>
         </form>
-
-    </div>
-</div>
-
-<!-- ========================================================================= -->
-<!-- MODAL 2: DETAIL SCHEDULE, INPUT AKTUAL, & DYNAMIC BALANCING              -->
-<!-- ========================================================================= -->
-<div id="modal-detail" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-fade-in-up">
-        
-        <!-- Modal Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-bold shadow-xs">
-                    <i class="fa-solid fa-sliders"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span id="detail-order-no" class="font-extrabold text-slate-900 text-base">PO-xxxx</span>
-                        <span id="detail-line" class="px-2 py-0.5 bg-slate-900 text-white text-xs font-bold rounded-md">LINE-01</span>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        <span id="detail-style" class="font-semibold text-slate-700">Style Name</span> &bull; Buyer: <span id="detail-buyer">Buyer</span>
-                    </p>
-                </div>
-            </div>
-            <button type="button" onclick="window.scheduleApp.closeDetailModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg cursor-pointer">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-        </div>
-
-        <!-- Schedule Overview Pill Cards -->
-        <div class="px-6 pt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                <span class="text-slate-400 font-semibold uppercase block text-[10px]">Total Target Qty</span>
-                <strong class="text-slate-900 text-sm" id="detail-target-total">0 pcs</strong>
-            </div>
-            <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 text-xs">
-                <span class="text-indigo-500 font-semibold uppercase block text-[10px]">Total Aktual Output</span>
-                <strong class="text-indigo-900 text-sm" id="detail-actual-total">0 pcs</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                <span class="text-slate-400 font-semibold uppercase block text-[10px]">Start Sewing</span>
-                <strong class="text-slate-800 text-xs" id="detail-start">-</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                <span class="text-slate-400 font-semibold uppercase block text-[10px]">Finish Sewing</span>
-                <strong class="text-slate-800 text-xs" id="detail-finish">-</strong>
-            </div>
-        </div>
-
-        <!-- Rule Explanation Alert -->
-        <div class="mx-6 mt-4 p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
-            <i class="fa-solid fa-lightbulb text-amber-500 text-sm mt-0.5"></i>
-            <div>
-                <strong>Aturan Auto-Balancing & Cascade Rescheduling:</strong>
-                <p class="text-amber-800 mt-0.5 leading-relaxed">
-                    Jika aktual output kurang dari target harian, selisih defisit dialihkan ke hari berikutnya. Apabila terjadi di akhir periode, range tanggal jadwal bertambah (+1 hari) dan jadwal order berikutnya pada line ini otomatis mundur (*cascade shift*).
-                </p>
-            </div>
-        </div>
-
-        <!-- Daily Targets & Actual Input Table -->
-        <div class="p-6">
-            <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                            <th class="py-3 px-4">Hari Ke</th>
-                            <th class="py-3 px-4">Tanggal Produksi</th>
-                            <th class="py-3 px-4">Target Output</th>
-                            <th class="py-3 px-4">Input Aktual Output</th>
-                            <th class="py-3 px-4">Deviasi (Defisit)</th>
-                            <th class="py-3 px-4">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detail-daily-tbody" class="divide-y divide-slate-100">
-                        <!-- Populated dynamically by window.scheduleApp -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs text-slate-400">Tekan "Simpan" pada baris tanggal untuk mengunci aktual output.</span>
-            <button type="button" onclick="window.scheduleApp.closeDetailModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl cursor-pointer">
-                Tutup
-            </button>
-        </div>
 
     </div>
 </div>
